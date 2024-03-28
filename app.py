@@ -2,11 +2,7 @@
 # CODE IMPORTS
 # =============================================================================
 import os, sys
-from functools import partial
-from numbers import Number
-import matplotlib
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow
 import qdarktheme
 
 __doc__     = "Calculator and Math Helper"
@@ -17,7 +13,6 @@ sys.path.append(os.path.join(PTH_APP, 'data'))
 
 # ---- Local addins
 from _global_ import *
-matplotlib.use('Qt5Agg')
 from generic_widgets import QCalcWidget, QTriangle_Solver
 import mainWindow
     
@@ -42,7 +37,7 @@ class MainWindow(QMainWindow, mainWindow.Ui_MainWindow):
 if __name__ == '__main__':
     try:
         app = QApplication(sys.argv)
-        # qdarktheme.setup_theme("auto")
+        qdarktheme.setup_theme("auto")
         navForm = MainWindow(app)
         sys.exit(app.exec_())   
 

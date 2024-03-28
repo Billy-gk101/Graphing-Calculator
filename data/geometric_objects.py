@@ -1,7 +1,7 @@
 # =============================================================================
 # CODE IMPORTS
 # =============================================================================
-import os, sys, math, copy
+import math, copy
 from numbers import Number
 
 class Line_Segment():
