@@ -138,9 +138,46 @@ class Line_Segment():
     
     def get_slope(self):
         return copy.deepcopy(self.__m)
+    
+    @property
+    def equation_points(self):
+        sq  = '<sup>2</sup>'
+        s1  = '<sub>1</sub>'
+        s2  = '<sub>2</sub>'
+        slf = self.equation_slope['equation']
+        return {'title':'Solving Line from points', 'desc':"Finding length of line and slope given just its points", 
+                'equation':f'start with getting the slope "{slf}" now let d be the length with "d=<span style="white-space: nowrap">&radic;<span style="text-decoration:overline;">(x{s2}-x{s1}){sq} + (y{s2}-y{s1}){sq})</span></span>"'}
+    
+    @property
+    def equation_pointLine(self):
+        return {'title':'Solving Line using point and slope', 'desc':"Finding other end of line given start_point and slope; this results in 2 plausible points", 
+                'equation':f'x1,y1=start_point; m=slope; c=1/√(1+(m**2)); rc=length*c; s=m/√(1+(m**2)); rs=length*s || now th points are (x1-rc, y1-rs),(x1+rc, y1+rs)'}
+    
+    @property
+    def equation_slope(self):
+        s1 = '<sub>1</sub>'
+        s2 = '<sub>2</sub>'
+        return {'title':'Solving slope', 'desc':"taking coords of line and determining the slope", 
+                'equation':f'let m be slope: m = (y{s2}-y{s1})/(x{s2}-x{s1})'}
+    
+    def wiki_html(self) -> str:
+        # remove space/padd from headings
+        h1 = f'<h1 style="padding:0;margin:0;">'
+        h2 = f'<h2 style="padding:0;margin:0;">'
+        h3 = f'<h3 style="padding:0;margin:0;">'
+
+        # compile the info (Laws and Equations) from the class
+        compiled = ''
+
+        compiled += f'{h1}Line Segments</h1>'
+        for d in [self.equation_slope, self.equation_pointLine, self.equation_points]:
+            compiled += f"{h3}{d['title']}</h3><i>{d['desc']}</i><br>{d['equation']}<br>"
+
+        return compiled
 
 class Poloygon():
     def __init__(self) -> None:
+
         return
 
 class Triangle(Poloygon):
@@ -168,6 +205,18 @@ class Triangle(Poloygon):
         self.lmC = None
 
         self.__centroid = None
+        return
+    
+    def __buildLineSegments_coords(self, coord_A:tuple[Number, Number], coord_B:tuple[Number, Number], coord_C:tuple[Number, Number]):
+        self.lAC = Line_Segment(start_point=coord_A, end_point=coord_C)
+        self.lAB = Line_Segment(start_point=coord_A, end_point=coord_B)
+        self.lBC = Line_Segment(start_point=coord_B, end_point=coord_C)
+        return
+    
+    def __buildLineSegments_medians(self):
+        self.lmA = Line_Segment(start_point=self.lAC.start_point, end_point=self.lBC.mid_point)
+        self.lmB = Line_Segment(start_point=self.lBC.start_point, end_point=self.lAC.mid_point)
+        self.lmC = Line_Segment(start_point=self.lAC.end_point,   end_point=self.lAB.mid_point)
         return
     
     def get_area(self, dec_places=None):
@@ -252,8 +301,10 @@ class Triangle(Poloygon):
         compiled += f'{h1}Miscellaneous</h1>'
         for d in [self.equation_median, self.equation_area]:
             compiled += f"{h3}{d['title']}</h3><i>{d['desc']}</i><br>{d['equation']}<br>"
-
+        
+        compiled += Line_Segment().wiki_html()
         return compiled
+    
     #region equation
     def __medianFormula(self, p:list[str]) -> str:        
         return f'm<sup>{p[0]}</sup><span style="white-space: nowrap">&radic;<span style="text-decoration:overline;">(2{p[1]}<sup>2</sup>+2{p[2]}<sup>2</sup>-{p[0]}<sup>2</sup>)/4</span></span>'
@@ -334,10 +385,7 @@ class Triangle(Poloygon):
         self.lBC = Line_Segment(length=self.A, start_point=self.lAB.end_point, end_point=self.lAC.end_point)
 
         # medians
-        # --- load point/lines as our line object5
-        self.lmA = Line_Segment(start_point=self.lAC.start_point, end_point=self.lBC.mid_point)
-        self.lmB = Line_Segment(start_point=self.lBC.start_point, end_point=self.lAC.mid_point)
-        self.lmC = Line_Segment(start_point=self.lAC.end_point,   end_point=self.lAB.mid_point)
+        self.__buildLineSegments_medians()
         return
     
     def solve_AAS(self, Aϴ, Bϴ, A):
@@ -440,17 +488,16 @@ class Triangle(Poloygon):
         self.CΘ = 180-self.AΘ-self.BΘ
         self.__finishSolve()
         return
+    
+    def solve_coords(self, coord_A:tuple[Number, Number], coord_B:tuple[Number, Number], coord_C:tuple[Number, Number]):
+        # build the line segments on the coords ...
+        self.__buildLineSegments_coords(coord_A, coord_B, coord_C)
+
+        # solve SSS
+        self.solve_SSS(self.lBC.length, self.lAC.length, self.lAB.length)
+
+        # now override the '__finishSolve' line segments to be at the specified points
+        self.__buildLineSegments_coords(coord_A, coord_B, coord_C)
+        self.__buildLineSegments_medians()
+        return
     #endregion
-
-    
-
-if __name__ == '__main__':
-    t = Triangle()
-    t.solve_SSS(4,3,5)
-    c = t.coords_list
-    print(c)
-    import matplotlib.pyplot as plt
-    
-    plt.plot(c[0], c[1])
-    plt.show()
-    pass

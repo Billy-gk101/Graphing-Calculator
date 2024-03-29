@@ -416,6 +416,7 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
         self.radioButton_6.clicked.connect(partial(self._solveTypeChange,['Angle A', 'Side C', 'Angle B']))
         self.radioButton_5.clicked.connect(partial(self._solveTypeChange,['Side A', 'Side B', 'Angle A']))
         self.radioButton.clicked.connect(partial(self._solveTypeChange,['Side A', 'Angle C', 'Side B']))
+        self.radioButton_13.clicked.connect(partial(self._solveTypeChange,['Coord A', 'Coord B', 'Coord C']))
 
         self.spinBox:QSpinBox
         self.spinBox.valueChanged.connect(self.__updateDataPerc)
@@ -560,26 +561,48 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
         p1 = self.lineEdit.text()
         p2 = self.lineEdit_2.text()
         p3 = self.lineEdit_3.text()
-        try:
-            p1 = float(p1)
-            p2 = float(p2)
-            p3 = float(p3)
-        except Exception as ex:
-            return warningMessageWindow(self, inspect.stack()[0], "This does not do symbol solves at this time ... speak with dev")
+        if self.radioButton_13.isChecked():
+            # try to cast as CSV x,y coords
+            try:
+                temp = []
+                temp += p1.split(',')
+                temp += p2.split(',')
+                temp += p3.split(',')
+                v = [float(i) for i in temp]
+                x1 = v[0]
+                y1 = v[1]
+                x2 = v[2]
+                y2 = v[3]
+                x3 = v[4]
+                y3 = v[5]
+                self.__t.solve_coords((x1,y1), (x2,y2), (x3,y3))
+                return self._reloadValues()
+            except Exception as ex:
+                return warningMessageWindow(self, inspect.stack()[0], f"Could not cast provided values as CSV x,y coords; please try again\n{ex}")
+        else:
+            try:
+                p1 = float(p1)
+                p2 = float(p2)
+                p3 = float(p3)
+            except Exception as ex:
+                return warningMessageWindow(self, inspect.stack()[0], "This does not do symbol solves at this time ... speak with dev")
 
         # determin what way to solve the triangle
         # then have the class solve it
         t = self.__t
-        if self.radioButton_2.isChecked():   # SSS
-            t.solve_SSS(p1, p2, p3)
-        elif self.radioButton_3.isChecked(): # AAS
-            t.solve_AAS(p1, p2, p3)
-        elif self.radioButton_6.isChecked(): # ASA
-            t.solve_ASA(p1, p2, p3)
-        elif self.radioButton_5.isChecked(): # SSA
-            t.solve_SSA(p1, p2, p3)
-        elif self.radioButton.isChecked():   # SAS
-            t.solve_SAS(p1, p2, p3)
+        try:
+            if self.radioButton_2.isChecked():    # SSS
+                t.solve_SSS(p1, p2, p3)
+            elif self.radioButton_3.isChecked():  # AAS
+                t.solve_AAS(p1, p2, p3)
+            elif self.radioButton_6.isChecked():  # ASA
+                t.solve_ASA(p1, p2, p3)
+            elif self.radioButton_5.isChecked():  # SSA
+                t.solve_SSA(p1, p2, p3)
+            elif self.radioButton.isChecked():    # SAS
+                t.solve_SAS(p1, p2, p3)
+        except Exception as e:
+            return warningMessageWindow(self, inspect.stack()[0], f"Could not solve triangle; please ensure you've selected the right option to solve.\nError: '{e}'")
         
         # now that its solved load that info on the form        
         return self._reloadValues()
