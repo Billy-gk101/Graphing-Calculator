@@ -299,7 +299,12 @@ class Triangle():
     @property
     def area(self) -> float:
         '''Unitless area of the triangle geometry'''
-        return self.__tri.area
+        a = self.side_a.length
+        b = self.side_b.length
+        c = self.side_c.length
+        s = self.perimeter/2
+        # Area = Square root of √( s(s-a)(s-b)(s-c) ) where s is half the perimeter
+        return math.sqrt(s*(s-a)*(s-b)*(s-c))
     @property
     def bounds(self) -> tuple:
         '''minimum bounding region of the triangle geometry'''
@@ -416,7 +421,7 @@ class Triangle():
     @property
     def equation_area(self):
         return {'title':"area [Heron's Formula]", 'desc':"Heron of Alexandria formula for triangle area", 
-                'equation':'Area = Square root of <span style="white-space: nowrap">&radic;<span style="text-decoration:overline;">s(s-a)(s-b)(s-c)</span></span> where s is half the perimeter or simplify to <span style="white-space: nowrap">&radic;<span style="text-decoration:overline;">(a+b+c)/2</span></span>'}
+                'equation':'Area = Square root of <span style="white-space: nowrap">&radic;<span style="text-decoration:overline;">s(s-a)(s-b)(s-c)</span></span> where s is half the perimeter'}
 
     @property
     def equation_AAS(self):
@@ -490,9 +495,9 @@ class Triangle():
         self.__lAC = Line_Segment()
         self.__lAC.solve_points(coord_A, coord_C)
         self.__lBC = Line_Segment()
-        self.__lBC.solve_points(coord_A, coord_B)
+        self.__lBC.solve_points(coord_B, coord_C)
         self.__lAB = Line_Segment()
-        self.__lAB.solve_points(coord_B, coord_C)
+        self.__lAB.solve_points(coord_A, coord_B)
 
         self.__tri = GeometryCollection([self.__lAC.geometry, self.__lBC.geometry, self.__lAB.geometry])
         return

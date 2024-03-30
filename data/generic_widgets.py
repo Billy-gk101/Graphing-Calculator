@@ -526,14 +526,26 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
         self.label_49.setText('{:,g}'.format(round(v['lmC'].length,self.__prc)))
 
         # --- load coords
-        lbl:QLabel
-        key:str
-        for lbl, key in {self.label_29:'side_a', self.label_30:'side_b', self.label_31:'side_c',self.label_34:'lmA', self.label_37:'lmB', self.label_38:'lmC'}.items():
-            x1,y1 = v[key].start_point
-            x2,y2 = v[key].end_point
-            a = f"{'{:,g}'.format(round(x1,self.__prc))}, {'{:,g}'.format(round(y1,self.__prc))}"
-            b = f"{'{:,g}'.format(round(x2,self.__prc))}, {'{:,g}'.format(round(y2,self.__prc))}"
-            lbl.setText(f"({a}) ({b})")
+        A,B,C = self.__t.triangle_coords
+        self.label_29.setText(f"({'{:,g}'.format(round(A[0],self.__prc))},{'{:,g}'.format(round(A[1],self.__prc))})")
+        self.label_30.setText(f"({'{:,g}'.format(round(B[0],self.__prc))},{'{:,g}'.format(round(B[1],self.__prc))})")
+        self.label_31.setText(f"({'{:,g}'.format(round(C[0],self.__prc))},{'{:,g}'.format(round(C[1],self.__prc))})")
+
+        A,B,C = self.__t.triangle_midpoint_coords
+        self.label_34.setText(f"({'{:,g}'.format(round(A[0],self.__prc))},{'{:,g}'.format(round(A[1],self.__prc))})")
+        self.label_37.setText(f"({'{:,g}'.format(round(B[0],self.__prc))},{'{:,g}'.format(round(B[1],self.__prc))})")
+        self.label_38.setText(f"({'{:,g}'.format(round(C[0],self.__prc))},{'{:,g}'.format(round(C[1],self.__prc))})")
+
+        # --- load coords
+        # lbl:QLabel
+        # key:str
+        # # self.label_29:'side_a', self.label_30:'side_b', self.label_31:'side_c',
+        # for lbl, key in {self.label_34:'lmA', self.label_37:'lmB', self.label_38:'lmC'}.items():
+        #     x1,y1 = v[key].start_point
+        #     x2,y2 = v[key].end_point
+        #     a = f"{'{:,g}'.format(round(x1,self.__prc))}, {'{:,g}'.format(round(y1,self.__prc))}"
+        #     b = f"{'{:,g}'.format(round(x2,self.__prc))}, {'{:,g}'.format(round(y2,self.__prc))}"
+        #     lbl.setText(f"({a}) ({b})")
         
         
         # finally render the triangle; so we have all the data we might need to label said graph
