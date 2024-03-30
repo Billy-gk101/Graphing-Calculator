@@ -1,7 +1,30 @@
+![Logo of the project](https://github.com/Billy-gk101/Graphing-Calculator/blob/main/img_geometry.png)
 # Graphing-Calculator
-Attempt at creating a expanding calculator for Pre-Algebra thru Calculous; recreating wheel but for my education/practice
-Usure of correct license as this is a WIP (Work in Progress) you must note that this does use Qt and matplotlib for the GUI so that needs to be considered
+> Attempt at creating a expanding calculator for Pre-Algebra thru Calculous
+recreating wheel but for my education/practice
 
-This is not intended for commercial use, feel free to use as allowed via dependancy licenses; I take no legal responsibility inpart or whole for others use of this.
+`App.py` is the main file; it uses `QT` to do the GUI windows, color picking, etc.
+Graph shown via `Matplotlib` (with the QT hook provided by matplotlib)
 
-I'll be reading through 'https://packaging.python.org/en/latest/tutorials/packaging-projects/' to learr about creating a setup.py as seen with other projects; I'm rather new to Packaging Python Projects; so this directoy structure and other parts may change without notice (again, this is a WIP)
+color of rendered objects can be configured and exported so next load you keep your prefered colors
+
+>built project on python3.10.12
+
+### Goals
+- Create a function calculator.
+- Create a triangle solver
+
+
+### Dependancies -pypi
+>qdarktheme may not work with new
+```shell
+PyQt5
+qt5-applications
+pyqtdarktheme
+matplotlib
+shapely
+```
+- QT; for the GUI
+- pyqtdarktheme; helps mimic current user desktop theme
+- shapely; helps manage geometry
+- matplotlib; used to show/plot geometry

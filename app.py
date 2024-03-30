@@ -7,7 +7,7 @@ from numbers import Number
 import matplotlib
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
-# import qdarktheme
+import qdarktheme
 
 __doc__     = "Calculator and Math Helper"
 __version__ = "0.1.3"
@@ -42,7 +42,10 @@ class MainWindow(QMainWindow, mainWindow.Ui_MainWindow):
 if __name__ == '__main__':
     try:
         app = QApplication(sys.argv)
-        # qdarktheme.setup_theme("auto")
+        try:
+            qdarktheme.setup_theme("auto")
+        except Exception as e:
+            QMessageBox.information(None,"System Information Notification",f'Could not utilize theme ...\n{e}')        
         navForm = MainWindow(app)
         sys.exit(app.exec_())   
 
