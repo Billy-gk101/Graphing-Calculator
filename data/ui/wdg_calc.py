@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'D:\Desktop\Calc Tests\data\ui\wdg_calc.ui'
+# Form implementation generated from reading ui file 'D:\Desktop\Calc Builder\data\ui\wdg_calc.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #

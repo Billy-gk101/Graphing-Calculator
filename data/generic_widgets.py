@@ -1,7 +1,7 @@
 # =============================================================================
 # CODE IMPORTS
 # =============================================================================
-import os, pickle
+import os, sys, io, math, pickle
 from functools import partial
 from numbers import Number
 import matplotlib
@@ -419,7 +419,7 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
         self.radioButton_13.clicked.connect(partial(self._solveTypeChange,['Coord A', 'Coord B', 'Coord C']))
 
         self.spinBox:QSpinBox
-        self.spinBox.valueChanged.connect(self.__updateDataPerc)
+        self.spinBox.valueChanged.connect(self._reloadValues)
 
         # link up annotation parts
         self.__annotationsParts()
@@ -507,50 +507,34 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
             QMessageBox.information(None,"System Information Notification",'Export complete')
         return
     
-    def __updateDataPerc(self, *args, **kwargs):
-        '''
-            kwargs
-                + skip_reload: skip the graphic and label reload; default/assumed False
-        '''
-        skip_reload = False
-        self.__prc = self.spinBox.value()
-        self.__dta = self.__t.get_data(self.__prc)
-        self.__dta.update(self.__t.get_median_lengths(self.__prc))
-        self.__dta.update(self.__t.get_points(self.__prc))
-
-        k = 'skip_reload'
-        if k in kwargs:
-            skip_reload = kwargs[k]
-
-        # skip graphics reload
-        if not skip_reload:
-            self._reloadValues()
-        return
-    
     def _reloadValues(self):
-        self.__updateDataPerc(**{'skip_reload':True})
+        self.__prc = self.spinBox.value()
+        self.__dta = self.__t.get_data()
         v = self.__dta
-        self.label_7.setText(f"{v['side_a']}")
-        self.label_8.setText(f"{v['side_b']}")
-        self.label_9.setText(f"{v['side_c']}")
-        self.label_16.setText(f"{v['angle_a']}")
-        self.label_17.setText(f"{v['angle_b']}")
-        self.label_18.setText(f"{v['angle_c']}")
-        self.label_19.setText(f"{v['area']}")
-        self.label_22.setText(f"{v['perimeter']}")
+        self.label_7.setText('{:,g}'.format(round(v['side_a'].length,self.__prc)))
+        self.label_8.setText('{:,g}'.format(round(v['side_b'].length,self.__prc)))
+        self.label_9.setText('{:,g}'.format(round(v['side_c'].length,self.__prc)))
+        self.label_16.setText('{:,g}'.format(round(v['angle_a'],self.__prc)))
+        self.label_17.setText('{:,g}'.format(round(v['angle_b'],self.__prc)))
+        self.label_18.setText('{:,g}'.format(round(v['angle_c'],self.__prc)))
+        self.label_19.setText('{:,g}'.format(round(v['area'],self.__prc)))
+        self.label_22.setText('{:,g}'.format(round(v['perimeter'],self.__prc)))
 
         # --- load medians lengths        
-        self.label_47.setText(f"{v['lmA']}")
-        self.label_48.setText(f"{v['lmB']}")
-        self.label_49.setText(f"{v['lmC']}")
+        self.label_47.setText('{:,g}'.format(round(v['lmA'].length,self.__prc)))
+        self.label_48.setText('{:,g}'.format(round(v['lmB'].length,self.__prc)))
+        self.label_49.setText('{:,g}'.format(round(v['lmC'].length,self.__prc)))
 
         # --- load coords
-        self.label_29.setText(f"{v['point_a']}")
-        self.label_30.setText(f"{v['point_b']}")
-        self.label_31.setText(f"{v['point_c']}")
-        self.label_34.setText(f"{v['point_mA']}")
-        self.label_37.setText(f"{v['point_mB']}")
-        self.label_38.setText(f"{v['point_mC']}")
+        lbl:QLabel
+        key:str
+        for lbl, key in {self.label_29:'side_a', self.label_30:'side_b', self.label_31:'side_c',self.label_34:'lmA', self.label_37:'lmB', self.label_38:'lmC'}.items():
+            x1,y1 = v[key].start_point
+            x2,y2 = v[key].end_point
+            a = f"{'{:,g}'.format(round(x1,self.__prc))}, {'{:,g}'.format(round(y1,self.__prc))}"
+            b = f"{'{:,g}'.format(round(x2,self.__prc))}, {'{:,g}'.format(round(y2,self.__prc))}"
+            lbl.setText(f"({a}) ({b})")
+        
         
         # finally render the triangle; so we have all the data we might need to label said graph
         return self._renderGraph()
@@ -618,7 +602,7 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
         self._cnvs.clear_plot()
 
         # get polygon coord list and plot polygon
-        x,y = self.__t.coords_list
+        x,y = self.__t.triangle_matplotlib_coords
         self._cnvs.fill(x,y,facecolor=fc, edgecolor=ol, linewidth=1)
 
         # expand the graph with hidden dots
@@ -630,10 +614,7 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
         # get the triangle data for use
         if not self.radioButton_9.isChecked() or not self.radioButton_7.isChecked() or self.checkBox.isChecked():
             dta = self.__dta
-            mid = [list(), list()]
-            for k in ['point_mA', 'point_mB', 'point_mC']:
-                for i in range(2):
-                    mid[i].append(dta[k][i])
+            mid = self.__t.triangle_matplotlib_midpoint_coords
 
             abc = {'A':{'index':0,'offset':(-1,-1)},
                    'B':{'index':1,'offset':(.5,.5)},
@@ -649,7 +630,7 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
                 for k,v in m_abc.items():
                     x1,y1 = mid[0][v['index']], mid[1][v['index']]
                     k1 = f'side_{k[1:].lower()}'
-                    self._cnvs.annotate(f'{dta[k1]}',(x1,y1),xytext=v['shift'],textcoords='offset fontsize',color=sec_color)
+                    self._cnvs.annotate('{:,g}'.format(round(dta[k1].length,self.__prc)),(x1,y1),xytext=v['shift'],textcoords='offset fontsize',color=sec_color)
 
             # point notation        
             if not self.radioButton_9.isChecked():                
@@ -661,12 +642,12 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
                 elif self.radioButton_12.isChecked(): # coords
                     for k,v in abc.items():
                         x1,y1 = x[v['index']], y[v['index']]
-                        self._cnvs.annotate(f'({x1}, {y1})',(x1,y1),xytext=v['offset'],textcoords='offset fontsize',color=sec_color)
+                        self._cnvs.annotate(f'({round(x1,self.__prc)}, {round(y1,self.__prc)})',(x1,y1),xytext=v['offset'],textcoords='offset fontsize',color=sec_color)
                 elif self.radioButton_11.isChecked(): # Angles
                     for k,v in abc.items():
                         x1,y1 = x[v['index']], y[v['index']]
                         a = dta[f"angle_{k.lower()}"]
-                        self._cnvs.annotate(f'{a}°',(x1,y1),xytext=v['offset'],textcoords='offset fontsize',color=sec_color)
+                        self._cnvs.annotate(f'{round(a,self.__prc)}°',(x1,y1),xytext=v['offset'],textcoords='offset fontsize',color=sec_color)
 
             # median notation
             if not self.radioButton_7.isChecked():

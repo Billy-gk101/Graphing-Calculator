@@ -1,144 +1,191 @@
 # =============================================================================
 # CODE IMPORTS
 # =============================================================================
+from __future__ import annotations
 import math, copy
 from numbers import Number
-
+from shapely import Point, LineString, Polygon, GeometryCollection
+from shapely.geometry.base import BaseGeometry
+    
 class Line_Segment():
-    '''
-    A linear equation is any equation whose graph is a line. All linear equations can be written in the form 
-    Ax + By = C
-    where A, B, and C are real numbers and A and B are not both zero. The following examples are linear equations and their respective A, B, and C values.
-    ie. x+y=0 == A=1,B=1,C=0 || 3x-4y=9 == A=3,B=-4,C=9 || x=-6 == A=1,B=0,C=-6 || y=7 == A=0,B=1,C=7
-    '''
-    def __init__(self, length:Number=None, slope:Number=None, start_point:tuple[Number,Number]=None, end_point:tuple[Number,Number]=None) -> None:
-        self.__s = start_point
-        self.__e = end_point
-        self.__l = length
-        self.__m = slope
-        if None not in [length, slope, start_point, end_point]: return
-        if None not in [start_point, end_point]:
-            self.solve_points(start_point, end_point)
-        elif None not in [length, start_point, slope]:
-            self.solve_slope_start_point(start_point, slope, length)
-        elif None not in [length, end_point, slope]:
-            self.solve_slope_end_point(start_point, slope, length)
+    def __init__(self, *args, **kwargs):
+        self.__lineString:LineString = None
         return
     
-    def __solve_length(self):
-        '''solve the length: d = √((x2 – x1)² + (y2 – y1)²)'''
-        x1, y1 = self.__s
-        x2, y2 = self.__e
-        self.__l = math.sqrt(((x2-x1)**2)+((y2-y1)**2))
-        return
+    def __str__(self):
+        return f"{self.length}"
     
-    def __solve_slope(self):
-        '''solve the slope: m = (y₂ - y₁) / (x₂ - x₁)'''
-        x1, y1 = self.__s
-        x2, y2 = self.__e
-        v1, v2 = (y2-y1),(x2-x1)
-        if 0 in [v1, v2]: self.__m = 0
-        else: self.__m = v1/v2
-        self.__solve_length()
-        return
+    #region checks
+    def intersection(self, geometry:BaseGeometry):
+        '''Returns the points that is shared between this and provided geometry.'''
+        return self.__lineString.intersection(geometry)
 
-    def __slope_points(self, point:tuple[Number,Number], slope:Number, length:Number) -> list[tuple]:
-        self.__l = length        
-        self.__m = slope
-        x1,y1 = point
-        m2 = slope**2
-        c = 1/math.sqrt(1+m2)
-        s = slope/math.sqrt(1+m2)
-        rc = length*c
-        rs = length*s
-        rv = 6
-        return [(round(x1-rc,rv), round(y1-rs,rv)),(round(x1+rc,rv), round(y1+rs,rv))]
+    def crosses(self, geometry:BaseGeometry) -> bool:
+        '''does this line and geometry intersect'''
+        return self.__lineString.crosses(geometry)       
+    #endregion
+
+    #region properties
+    @property
+    def geometry(self):
+        return LineString(self.coords)
     
     @property
-    def coords(self):
-        return [self.__s, self.__e]
+    def start_point(self) -> tuple[Number,Number]:
+        '''line start-point coordinate'''
+        return self.coords[0]
     
     @property
-    def start_point(self):
-        return copy.deepcopy(self.__s)
+    def end_point(self) -> tuple[Number,Number]:
+        '''line end-point coordinate'''
+        return self.coords[1]
     
     @property
-    def end_point(self):
-        return copy.deepcopy(self.__e)
-    
-    @property
-    def mid_point(self):
-        return self.get_midpoint()
-    
-    def get_midpoint(self):
-        x1, y1 = self.__s
-        x2, y2 = self.__e
+    def mid_point(self) -> tuple[Number,Number]:
+        c = self.coords
+        x1, y1 = c[0]
+        x2, y2 = c[1]
         return ((x1+x2)/2, (y1+y2)/2)
     
-    def set_endpoint(self, end_point:tuple[Number,Number]):
-        self.__e = end_point
-        return
+    @property
+    def coords(self) -> list[tuple[Number,Number],tuple[Number,Number]]:
+        '''
+        line geometry coordinates
+
+        Returns
+        -------
+        list[tuple[Number,Number],tuple[Number,Number]]
+            [(start_x, start_y), (end_x, end_y)]
+        '''
+        return list(self.__lineString.coords)
     
-    def solve_slope_start_point(self, start_point:tuple[Number,Number], slope:Number, length:Number) -> list[tuple]:
+    @property
+    def y_intercept(self) -> Number:
         '''
-        this will assume the positive values of points are to be the end point; but returns both
-        x1,y1=start_point; m=slope; c=1/√(1+(m**2)); rc=length*c; s=m/√(1+(m**2)); rs=length*s
-        return [(x1-rc, y1-rs),(x1+rc, y1+rs)]
+        Where the line intercepts (crosses) the Y-axis
 
-        use set_endpoint and return[0] if return[1] is not the desired point
+        this is defined algebraically as y=mx+b where b is the intercept value
+        so to reverse this from information known we'd use b=y-(m*x)
         '''
-        v = self.__slope_points(start_point, slope, length)
-        self.__s = start_point
-        self.__e = copy.deepcopy(v[1])
-        return v
-    
-    def solve_slope_end_point(self, end_point:tuple[Number,Number], slope:Number, length:Number) -> list[tuple]:
-        '''
-        this will assume the positive values of points are to be the end point; but returns both
-        x1,y1=start_point; m=slope; c=1/√(1+(m**2)); rc=length*c; s=m/√(1+(m**2)); rs=length*s
-        return [(x1-rc, y1-rs),(x1+rc, y1+rs)]
+        m   = self.slope
+        x,y = self.start_point[1]
+        return y-(m*x)
 
-        use set_endpoint and return[1] if return[0] is not the desired point
+    @ property
+    def slope(self) -> Number:
         '''
-        v = self.__slope_points(end_point, slope, length)
-        self.__e = end_point
-        self.__s = copy.deepcopy(v[0])
-        return v
-    
-    def solve_points(self, start_point:tuple[Number,Number], end_point:tuple[Number,Number]):
-        '''
-        If we are just given two points (x1,y1) and (x2,y2), we must first work out the gradient using the gradient formula
-        m=(y2-y1)/(x2-x1)
-        then substitute either point to finish definition of line
-        y=mx+b
-        '''
-        # store known vals
-        self.__s = start_point
-        self.__e = end_point
+        slope of line
 
-        # find m
-        self.__solve_slope()
-        # x1,y1 = start_point
-        # x2,y2 = end_point
-        # self.__m = (y2-y1)/(x2-x1)
-
-        # # solve the length d=√((x2 – x1)² + (y2 – y1)²)
-        # self.__solve_length()     
-        return
+        this has a few terms; slope, gradient, rise/run, etc
+        this is defined algebraically as m=(y₂-y₁)/(x₂-x₁)
+        '''
+        c = self.coords
+        if not None in c:
+            x,y = c
+            return (y[1]-y[0])/(x[1]-x[0])
+        return None
     
     @property
     def length(self):
-        return copy.deepcopy(self.__l)
+        '''
+        length of line
+
+        this is defined algebraically as d=√( (x2-x1)² + (y2-y1)² )
+        '''
+        return self.__lineString.length
+    #endregion
+
+    #region solvers
+    def get_PSL_points(self, point:tuple[Number,Number], slope:Number, length:Number) -> list[tuple[Number,Number],tuple[Number,Number]]:
+        '''
+        solves line from provided information
+
+        create/solve a line with only knowing its start_point, slope and length; this will give us 2 values when we substitute
+        a point to either side of the provided point
+        The equation of a line in point slope form is y-y1 = m(x-x1); with this lets substitute with information we know
+        x1,y1=start_point; m=slope; c=1/√(1+(m**2)); rc=length*c; s=m/√(1+(m**2)); rs=length*s
+        now we can define the other point (x1-rc, ry1-rs) or (x1+rc, y1+rs,rv)
+
+        Parameters
+        ----------
+        point : tuple[Number,Number]
+            a point of the line to define
+        slope : Number
+            slope of the line to define
+        length: Number
+            length of the line to define
+        
+        Returns
+        -------
+        points to either side of the given point along the line and distance provided as length 
+        list[tuple[Number,Number],tuple[Number,Number]]
+            [(x1, y1), (x2, y2)]
+        '''
+        rv    = 6
+        m2    = slope**2
+        c     = 1/math.sqrt(1+m2)
+        s     = slope/math.sqrt(1+m2)
+        x1,y1 = point
+        rc    = length*c
+        rs    = length*s        
+        return [(round(x1-rc,rv), round(y1-rs,rv)),(round(x1+rc,rv), round(y1+rs,rv))]
     
-    def get_length(self):
-        return self.length
+    def solve_start_SL(self, point:tuple[Number,Number], slope:Number, length:Number):
+        '''
+        assumes the provided is the start point and the 2nd calculated value from get_PSL_points function is the end of the line
+
+        this then populates properties to completely define the line
+
+        Parameters
+        ----------
+        point : tuple[Number,Number]
+            start point of the line to define
+        slope : Number
+            slope of the line to define
+        length: Number
+            length of the line to define
+        '''
+        points = self.get_PSL_points(point, slope, length)
+        self.__lineString = LineString([point, points[1]])
+        return
     
-    def get_points(self):
-        return (copy.deepcopy(self.__s),copy.deepcopy(self.__e))
+    def solve_end_SL(self, point:tuple[Number,Number], slope:Number, length:Number):
+        '''
+        assumes 1st calculated value from get_PSL_points function is the start of the line and the provided is the end point
+
+        this then populates properties to completely define the line
+        
+        Parameters
+        ----------
+        point : tuple[Number,Number]
+            end point of the line to define
+        slope : Number
+            slope of the line to define
+        length: Number
+            length of the line to define
+        '''
+        points = self.get_PSL_points(point, slope, length)
+        self.__lineString = LineString([points[0], point])
+        return
     
-    def get_slope(self):
-        return copy.deepcopy(self.__m)
-    
+    def solve_points(self, start_point:tuple[Number,Number], end_point:tuple[Number,Number]):
+        '''
+        assumes 1st calculated value from get_PSL_points function is the start of the line and the provided is the end point
+
+        this then populates properties to completely define the line
+        
+        Parameters
+        ----------
+        start_point : tuple[Number,Number]
+            start point of the line to define
+        end_point   : tuple[Number,Number]
+            end point of the line to define
+        '''
+        self.__lineString = LineString([start_point, end_point])
+        return
+    #endregion
+        
+    #region wiki stuff
     @property
     def equation_points(self):
         sq  = '<sup>2</sup>'
@@ -174,13 +221,16 @@ class Line_Segment():
             compiled += f"{h3}{d['title']}</h3><i>{d['desc']}</i><br>{d['equation']}<br>"
 
         return compiled
+    #endregion
 
-class Poloygon():
-    def __init__(self) -> None:
+class Triangle():
+    '''
+    Container (not collection) of shapely objects used to define a triangle
 
-        return
-
-class Triangle(Poloygon):
+    Leveraging Shaply to assist in the managment of items and checking overlap, intersects, boundary, etc.
+    not doing inheritance as this class has solvers that will generate all the dependent geometry;
+    it will build collections such as the line_segments (Line_Segment) that build the triangle iteself
+    '''
     ## https://www.mathsisfun.com/algebra/trig-solving-triangles.html
     #             Bϴ
     #           .    .
@@ -190,95 +240,150 @@ class Triangle(Poloygon):
     #   .                    .
     # Aϴ . . . .  B  . . . .  Cϴ
     def __init__(self) -> None:
-        super().__init__()
-        self.A = None
-        self.B = None
-        self.C = None
-        self.Aϴ = None
-        self.Bϴ = None
-        self.Cϴ = None
-        self.lAC = None
-        self.lBC = None
-        self.lAB = None
-        self.lmA = None
-        self.lmB = None
-        self.lmC = None
 
-        self.__centroid = None
-        return
-    
-    def __buildLineSegments_coords(self, coord_A:tuple[Number, Number], coord_B:tuple[Number, Number], coord_C:tuple[Number, Number]):
-        self.lAC = Line_Segment(start_point=coord_A, end_point=coord_C)
-        self.lAB = Line_Segment(start_point=coord_A, end_point=coord_B)
-        self.lBC = Line_Segment(start_point=coord_B, end_point=coord_C)
-        return
-    
-    def __buildLineSegments_medians(self):
-        self.lmA = Line_Segment(start_point=self.lAC.start_point, end_point=self.lBC.mid_point)
-        self.lmB = Line_Segment(start_point=self.lBC.start_point, end_point=self.lAC.mid_point)
-        self.lmC = Line_Segment(start_point=self.lAC.end_point,   end_point=self.lAB.mid_point)
-        return
-    
-    def get_area(self, dec_places=None):
-        '''area via Heron's Formula'''
-        # SAS
-        a = .5*(self.B*self.C)*math.sin(math.radians(self.Aϴ))
+        # angles of triangle ... these dont appear to be anywhere in the shapely structure
+        self.__Aϴ:Number = None # the angle at point A between lAC & lAB
+        self.__Bϴ:Number = None # the angle at point B between lAB & lBC
+        self.__Cϴ:Number = None # the angle at point C between lAC & lBC
 
-        # Heron's Formula
-        s = self.get_perimeter(None)/2
-        s = s*((s-self.A)*(s-self.B)*(s-self.C))
-        s = math.sqrt(s)
-        if dec_places is None: return s
-        return round(s, dec_places)
+        # union these to create a triangle then we can get more info from it
+        self.__lAC:Line_Segment = None # the line between point A and C (side b) 
+        self.__lBC:Line_Segment = None # the line between point B and C (side a)
+        self.__lAB:Line_Segment = None # the line between point A and B (side c)
+
+        # here are the medians
+        self.__lmA:Line_Segment = None # the line between point A and midpoint lBC
+        self.__lmB:Line_Segment = None # the line between point B and midpoint lAC
+        self.__lmC:Line_Segment = None # the line between point C and midpoint lAB
+
+        # to get set to the colection of lAC, lAB, lBC everytime they're redefined
+        self.__tri:GeometryCollection = None
+        return
     
-    def get_circumradius(self, dec_places=None):
-        '''side_a/(2*sin(angle_a))'''
-        c = self.A/(2*math.sin(math.radians(self.AΘ)))
-        if dec_places is None: return c
-        return round(c, dec_places)
+    def get_data(self):
+            '''quick way to get form information about the triangle geometry'''
+        #     v['lmA']}")
+        # self.label_48.setText(f"{v['lmB']}")
+        # self.label_49.setText(f"{v['lmC']}")
+            return {"side_a":self.side_a, "side_b":self.side_b, "side_c":self.side_c, 
+                    "angle_a":self.Aϴ, "angle_b":self.Bϴ, "angle_c":self.Cϴ, 
+                    "area":self.area, "perimeter":self.perimeter, "inradius":self.inradius,
+                    "circumradius":self.circumradius, "centroid":self.centroid, 'medians':self.medians,
+                    'lmA':self.lmA, 'lmB':self.lmB, 'lmC':self.lmC}
     
-    def get_points(self, dec_places=None):
-        rtn = self.points
-        if dec_places is None: return rtn
-        for k,v in rtn.items():
-            x,y = v
-            rtn[k] = (round(x, dec_places), round(y, dec_places))
-        return rtn
-    
-    def get_data(self, dec_places=2):
-            return {"side_a":round(self.A, dec_places), "side_b":round(self.B, dec_places), "side_c":round(self.C, dec_places),
-                    "angle_a":round(self.Aϴ, dec_places), "angle_b":round(self.Bϴ, dec_places), "angle_c":round(self.Cϴ, dec_places),
-                    "area":self.get_area(dec_places), "perimeter":self.get_perimeter(dec_places), "inradius":self.get_inradius(dec_places),
-                    "circumradius":self.get_circumradius(dec_places)}
-    
-    def get_inradius(self, dec_places=None):
-        '''area/perimeter'''
-        v = self.get_area(None)/self.get_perimeter(None)
-        if dec_places is None: return v
-        return round(v, dec_places)
-    
-    def get_median_lengths(self, dec_places=None):
-        rtn = self.medians
-        if dec_places is None: return rtn
-        v:Line_Segment
-        for k,v in rtn.items():
-            rtn[k] = round(v.length, dec_places)
-        return rtn
-    
-    def get_perimeter(self, dec_places=None):
-        '''perimeter: length of all sides added up'''
-        v = self.A+self.B+self.C
-        if dec_places is None: return v
-        return round(v, dec_places)
-    
+    # region matplotlib_helpers
     @property
-    def points(self):
-        return {'point_a':self.lAC.start_point, 'point_b':self.lBC.start_point, 'point_c':self.lAC.end_point, 'point_mA':self.lBC.mid_point, 'point_mB':self.lAC.mid_point, 'point_mC':self.lAB.mid_point}
-    
+    def triangle_matplotlib_coords(self) -> list[list[Number], list[Number]]:
+        '''Separate arrays of X and Y coordinate values of triangle geometry'''        
+        # the built in XY feature throws and error 'NotImplementedError'
+        # self.__tri.xy -- doing this myself
+        x,y = [],[]
+        for coord in self.triangle_coords:
+            x.append(coord[0])
+            y.append(coord[1])
+        return [x,y]
     @property
-    def medians(self):
-        return{'lmA':copy.deepcopy(self.lmA), 'lmB':copy.deepcopy(self.lmB), 'lmC':copy.deepcopy(self.lmC)}
-    
+    def triangle_matplotlib_midpoint_coords(self) -> list[list[Number], list[Number]]:
+        '''Separate arrays of X and Y coordinate values of triangle geometry midpoints'''
+        x,y = [],[]
+        for coord in self.triangle_midpoint_coords:
+            x.append(coord[0])
+            y.append(coord[1])
+        return [x,y]
+    # endregion
+
+    # region property defs
+    @property
+    def perimeter(self):        
+        return self.__tri.length
+    @property
+    def area(self) -> float:
+        '''Unitless area of the triangle geometry'''
+        return self.__tri.area
+    @property
+    def bounds(self) -> tuple:
+        '''minimum bounding region of the triangle geometry'''
+        return self.__tri.bounds
+    @property
+    def inradius(self):
+        '''triangle geometry area/perimeter'''
+        return self.area/self.perimeter
+    @property
+    def centroid(self) -> Point:
+        '''geometric center of the triangle geometry'''
+        return self.__tri.centroid
+    @property
+    def circumradius(self):
+        '''the distance from centroid to A,B, or C points of triangle'''
+        cr = Line_Segment()
+        cr.solve_points(self.centroid, self.__lAC.end_point)
+        return cr.length
+    @property
+    def Aϴ(self) -> Number:
+        '''the angle (in degrees) at point A between lAC & lAB'''
+        return self.__Aϴ    
+    @property
+    def Bϴ(self) -> Number:
+        '''the angle (in degrees) at point B between lAB & lBC'''
+        return self.__Bϴ    
+    @property
+    def Cϴ(self) -> Number:
+        '''the angle (in degrees) at point C between lAC & lBC'''
+        return self.__Cϴ    
+    @property
+    def lAC(self) -> Line_Segment:
+        '''the line between point A and C (side b)'''
+        return copy.deepcopy(self.__lAC)
+    @property
+    def lBC(self) -> Line_Segment:
+        '''the line between point B and C (side a)'''
+        return copy.deepcopy(self.__lBC)
+    @property
+    def lAB(self) -> Line_Segment:
+        '''the line between point A and B (side c)'''
+        return copy.deepcopy(self.__lAB)
+    @property
+    def side_a(self):
+        '''side a: the line between point B and C'''
+        return self.lBC
+    @property
+    def side_b(self):
+        '''side b: the line between point A and C'''
+        return self.lAC
+    @property
+    def side_c(self):
+        '''side c: the line between point A and B'''
+        return self.lAB
+    @property
+    def lmA(self) -> Line_Segment:
+        '''the line between point A and midpoint lBC'''
+        return copy.deepcopy(self.__lmA)
+    @property
+    def lmB(self) -> Line_Segment:
+        '''the line between point B and midpoint lAC'''
+        return copy.deepcopy(self.__lmB)
+    @property
+    def lmC(self) -> Line_Segment:
+        '''the line between point C and midpoint lAB'''
+        return copy.deepcopy(self.__lmC)
+    @property
+    def triangle_coords(self) -> list[Point]:
+        '''triangle geometry coordinates'''
+        A,C = self.__lAC.coords
+        B   = self.__lBC.coords[0]
+        # WTF; self.__tri.coords returns NotImplementedError
+        return [A,B,C]
+    @property
+    def triangle_midpoint_coords(self) -> list[Point]:
+        '''triangle geometry midpoint coordinates'''
+        return [self.side_a.mid_point,self.side_b.mid_point,self.side_c.mid_point]
+    @property
+    def medians(self) -> dict[str, Line_Segment]:
+        '''medians of triangle geometry'''
+        return {'lmA':self.lmA, 'lmB':self.lmB, 'lmC':self.lmC}
+    # endregion
+
+    #region wiki stuff
     @property
     def wiki_html(self) -> str:
         # remove space/padd from headings
@@ -305,28 +410,8 @@ class Triangle(Poloygon):
         compiled += Line_Segment().wiki_html()
         return compiled
     
-    #region equation
     def __medianFormula(self, p:list[str]) -> str:        
         return f'm<sup>{p[0]}</sup><span style="white-space: nowrap">&radic;<span style="text-decoration:overline;">(2{p[1]}<sup>2</sup>+2{p[2]}<sup>2</sup>-{p[0]}<sup>2</sup>)/4</span></span>'
-    
-    @property
-    def coords_list(self):
-        x,y = [], []
-        c = self.lAC.coords
-        x.append(c[0][0])
-        y.append(c[0][1])
-
-        c = self.lBC.coords
-        x.append(c[0][0])
-        y.append(c[0][1])
-        x.append(c[1][0])
-        y.append(c[1][1])
-
-        # close shape
-        x.append(x[0])
-        y.append(y[0])
-
-        return x,y
     
     @property
     def equation_area(self):
@@ -376,128 +461,243 @@ class Triangle(Poloygon):
         return {'title':'Law of Cosines', 'desc':"The Law of Cosines (or Cosine Rule) is very useful for solving triangles", 
                 'equation':'c<sup>2</sup> = a<sup>2</sup> + b<sup>2</sup> - 2ab cos(C)'}
     #endregion
-    
+        
     #region solvers
-    def __finishSolve(self):
-        s = (0,0)
-        self.lAC = Line_Segment(length=self.B, start_point=s, end_point=(self.B,0))
-        self.lAB = Line_Segment(length=self.C, slope=math.tan(math.radians(self.Aϴ)), start_point=s)
-        self.lBC = Line_Segment(length=self.A, start_point=self.lAB.end_point, end_point=self.lAC.end_point)
+    def __finishSolve(self, A:Number):
+
+        # finish up with AAS now we have all the degrees and are given side_ via A
+        # a/sin(A) = b/sin(B) = c/sin(C)
+        sa = round(A/math.sin(math.radians(self.__Aϴ)),2) # a/sin(A)        
+        
+        C = math.sin(math.radians(self.__Cϴ))*sa
+        B = math.sin(math.radians(self.__Bϴ))*sa
+
+        self.__lAB = Line_Segment()
+        self.__lAB.solve_start_SL((0,0), math.tan(math.radians(self.__Aϴ)), C)
+        self.__lAC = Line_Segment()
+        self.__lAC.solve_start_SL((0,0), 0, B)
+        self.__lBC = Line_Segment()
+        self.__lBC.solve_points(self.__lAB.end_point, self.__lAC.end_point)
+
+        # place lines into a collection for properties
+        self.__tri = GeometryCollection([self.__lAC.geometry, self.__lBC.geometry, self.__lAB.geometry])
 
         # medians
-        self.__buildLineSegments_medians()
+        self.__linesMedians()
         return
     
-    def solve_AAS(self, Aϴ, Bϴ, A):
+    def __linesPerimeter(self, coord_A:tuple[Number, Number], coord_B:tuple[Number, Number], coord_C:tuple[Number, Number]):
+        self.__lAC = Line_Segment()
+        self.__lAC.solve_points(coord_A, coord_C)
+        self.__lBC = Line_Segment()
+        self.__lBC.solve_points(coord_A, coord_B)
+        self.__lAB = Line_Segment()
+        self.__lAB.solve_points(coord_B, coord_C)
+
+        self.__tri = GeometryCollection([self.__lAC.geometry, self.__lBC.geometry, self.__lAB.geometry])
+        return
+    
+    def __linesMedians(self):
+        A,B,C = self.triangle_coords
+        # A,C = self.__lAC.coords
+        # B   = self.__lBC.coords[0]
+        self.__lmA = Line_Segment()
+        self.__lmA.solve_points(A, self.__lBC.mid_point)
+        self.__lmB = Line_Segment()
+        self.__lmB.solve_points(B, self.__lAC.mid_point)
+        self.__lmC = Line_Segment()
+        self.__lmC.solve_points(C, self.__lAB.mid_point)
+        return
+    
+    def __solveAnglesFromSides(self,A,B,C):
+        a2=A**2
+        b2=B**2
+        c2=C**2
+        self.__Aϴ = math.degrees(math.acos((b2+c2-a2)/(2*B*C)))
+        self.__Bϴ = math.degrees(math.acos((c2+a2-b2)/(2*C*A)))
+        self.__Cϴ = 180-(self.__Aϴ+self.__Bϴ)
+        return
+    
+    def solve_AAS(self, Aϴ:Number, Bϴ:Number, A:Number):
         '''
-        Angle-Angle-Side Solve
+        solve a triangle via Angle-Angle-Side (AAS)
+
         Two Angles and a Side not between
-            Angle A
-            Angle B
-            Side  A
-        '''
-        self.Aϴ = Aϴ
-        self.Bϴ = Bϴ
-        self.A  = A
-        self.Cϴ = 180-(Aϴ+Bϴ)
         
-        sa = self.A/math.sin(math.radians(self.Aϴ))
-        self.B = math.sin(math.radians(self.Bϴ))*sa
-        self.C = math.sin(math.radians(self.Cϴ))*sa
-        self.__finishSolve()
+        Parameters
+        ----------
+        Aϴ : Number
+            angle (in degrees) at point A
+        Bϴ : Number
+            angle (in degrees) at point B
+        A  : Number
+            length of line BC (side a)
+            
+        Algebraic steps
+        ---------------
+            find Cϴ: 180-(Aϴ+Bϴ)
+            then The Law of Sines "a/sin(A) = b/sin(B) = c/sin(C)" to find each of the other two sides.
+        '''
+        self.__Aϴ = Aϴ
+        self.__Bϴ = Bϴ
+        self.__Cϴ = 180-(Aϴ+Bϴ)
+        self.__finishSolve(A)
         return
     
-    def solve_SSA(self, A, B, Aϴ):
+    def solve_SSA(self, A:Number, B:Number, Aϴ:Number):
         '''
-        Side-Side-Angle; 
+        solve a triangle via Side-Side-Angle (SSA)
+
         Two Sides and an Angle not between
-            Side  A
-            Side  B
-            Angle A
-        Steps
-            find Cϴ: sin(Cϴ)/C = sin(Aϴ)/A
-            find Bϴ: 180-Aϴ-Cϴ
-            find  B: B/sin(Bϴ) = A/sin(Aϴ)
+        
+        Parameters
+        ----------
+        A  : Number
+            length of line BC (side a)
+        B  : Number
+            length of line AC (side b)
+        Aϴ : Number
+            angle (in degrees) at point A
+            
+        Algebraic steps
+        ---------------
+            use The Law of Sines first to calculate one of the other two angles
+            then use the three angles add to 180° to find the other angle
+            finally use The Law of Sines again to find the unknown side
         '''
-        self.A  = A     # 8
-        self.B  = B     # 13
-        self.Aϴ = Aϴ    # 31
+        sa        = round((B*math.sin(math.radians(Aϴ)))/A,4)
+        self.__Aϴ = Aϴ
+        self.__Bϴ = math.degrees(math.asin(sa))
+        self.__Cϴ = 180-(Aϴ+self.__Bϴ)
 
-        # find  C: sin(Cϴ)/C = sin(Aϴ)/A
-        sa = (B*math.sin(math.radians(Aϴ)))/A
-        self.Bϴ = math.degrees(math.asin(sa))   # 56.818 ...
-        self.Cϴ = 180-Aϴ-self.Bϴ                # 92.181 ...
-        # print(f"Aϴ={self.Aϴ}; Bϴ={self.Bϴ}; Cϴ={self.Cϴ}")
-
-        self.C = (math.sin(math.radians(self.Cϴ))*A)/math.sin(math.radians(Aϴ))
-        # print(f"A={self.A}; B={self.B}; C={self.C}")
-
-        self.__finishSolve()
+        self.__finishSolve(A)
         return
     
     def solve_ASA(self, Aϴ, C, Bϴ):
         '''
-        Angle-Side-Angle
-        Two Angles and a Side between
-            Angle A
-            Side  C
-            Angle B
-        '''
-        self.Aϴ = Aϴ
-        self.Bϴ = Bϴ
-        self.Cϴ = 180-(self.Aϴ+self.Bϴ)
-        self.C  = C
+        solve a triangle via Angle-Side-Angle (ASA)
 
-        sa = self.C/math.sin(math.radians(self.Cϴ))
-        self.A = math.sin(math.radians(self.Aϴ))*sa
-        self.B = math.sin(math.radians(self.Bϴ))*sa
-        self.__finishSolve()
+        Two Angles and a Side between
+        
+        Parameters
+        ----------
+        Aϴ : Number
+            angle (in degrees) at point A
+        C  : Number
+            length of line AB (side c)
+        Bϴ : Number
+            angle (in degrees) at point B
+            
+        Algebraic steps
+        ---------------
+            find the third angle using the three angles add to 180°
+            then use The Law of Sines to find each of the other two sides.
+        '''
+        self.__Aϴ = Aϴ
+        self.__Bϴ = Bϴ
+        self.__Cϴ = 180-(Aϴ+Bϴ)
+
+        # math to find side a so we can complete via AAS
+        sa = C/math.sin(math.radians(self.__Cϴ))
+        A = math.sin(math.radians(Aϴ))*sa
+        self.__finishSolve(A)
         return
     
-    def solve_SAS(self, A, Cϴ, B):
+    def solve_SAS(self, B, Aϴ, C):
         '''
-        Side-Angle-Side Solve
-        Two Sides and an Angle between
-            Side  A
-            Angle C
-            Side  B           
+        solve a triangle via Side-Angle-Side (SAS)
+
+        Two Angles and a Side between
+        
+        Parameters
+        ----------
+        B  : Number
+            length of line AC (side b)
+        Aϴ : Number
+            angle (in degrees) at point A
+        C  : Number
+            length of line AB (side c)
+            
+        Algebraic steps
+        ---------------
+            use The Law of Cosines to calculate the unknown side
+            then use The Law of Sines to find the smaller of the other two angles
+            and then use the three angles add to 180° to find the last angle.
         '''
-        self.A = A
-        self.B = B
-        self.Cϴ = Cϴ
-        self.C = math.sqrt((self.A**2+self.B**2)-((2*self.A*self.B)*math.cos(math.radians(self.Cϴ))))
-        return self.from_SSS(self.A, self.B, self.C)
+        A = math.sqrt((B**2)+(C**2)-((2*B*C)*math.cos(math.radians(Aϴ))))
+        return self.solve_SSS(A,B,C)
     
     def solve_SSS(self, A, B, C):
         '''
-        Side-Side-Side Solve
-        Three Sides
-            Side  A
-            Side  B
-            Side  C
-        '''
-        self.A = A
-        self.B = B
-        self.C = C
-        a2=self.A*self.A
-        b2=self.B*self.B
-        c2=self.C*self.C
+        solve a triangle via Side-Side-Side (SSS)
 
-        self.AΘ = math.degrees(math.acos((b2+c2-a2)/(2*self.B*self.C)))
-        self.BΘ = math.degrees(math.acos((c2+a2-b2)/(2*self.C*self.A)))
-        self.CΘ = 180-self.AΘ-self.BΘ
-        self.__finishSolve()
+        know the 3 sides but no angles
+        
+        Parameters
+        ----------
+        A  : Number
+            length of line BC (side a)
+        B  : Number
+            length of line AC (side b)
+        Aϴ : Number
+            angle (in degrees) at point A
+        C  : Number
+            length of line AB (side c)
+            
+        Algebraic steps
+        ---------------
+            use The Law of Cosines first to calculate one of the angles
+            then use The Law of Cosines again to find another angle
+            and finally use angles of a triangle add to 180° to find the last angle.
+        '''
+        self.__solveAnglesFromSides(A, B, C)
+        self.__finishSolve(A)
         return
     
     def solve_coords(self, coord_A:tuple[Number, Number], coord_B:tuple[Number, Number], coord_C:tuple[Number, Number]):
+        '''
+        solve a triangle via Side-Side-Side (SSS) from the lines coordinates
+
+        know the 3 sides but no angles
+        
+        Parameters
+        ----------
+        coord_A : tuple[Number, Number]
+            coordinates for point A
+        coord_B : tuple[Number, Number]
+            coordinates for point B
+        coord_C : tuple[Number, Number]
+            coordinates for point C
+            
+        Algebraic steps
+        ---------------
+            find the line length of each line using the coords d=√( (x2-x1)² + (y2-y1)² )
+            complete with SSS solving:
+                use The Law of Cosines first to calculate one of the angles
+                then use The Law of Cosines again to find another angle
+                and finally use angles of a triangle add to 180° to find the last angle.
+        '''
         # build the line segments on the coords ...
-        self.__buildLineSegments_coords(coord_A, coord_B, coord_C)
+        self.__linesPerimeter(coord_A, coord_B, coord_C)
 
-        # solve SSS
-        self.solve_SSS(self.lBC.length, self.lAC.length, self.lAB.length)
+        # solve angles
+        self.__solveAnglesFromSides(self.__lBC.length, self.__lAC.length, self.__lAB.length)
 
-        # now override the '__finishSolve' line segments to be at the specified points
-        self.__buildLineSegments_coords(coord_A, coord_B, coord_C)
-        self.__buildLineSegments_medians()
+        # load in the medians
+        self.__linesMedians()
         return
     #endregion
+
+if __name__ == '__main__':
+    # CoordinateSequence
+    l1 = LineString([(0,0), (9,9)])
+    l2 = LineString([(0,9), (9,0)])
+    print(l1.intersection(l2))
+
+    ml = Line_Segment()
+    ml.solve_points((0,0), (9,9))
+    print(ml.mid_point)
+
+    t = Triangle()
+    t.solve_SSS(4,3,5)
+    print(t.triangle_coords)
