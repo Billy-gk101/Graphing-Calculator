@@ -2,17 +2,22 @@
 # CODE IMPORTS
 # =============================================================================
 import os, sys
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from functools import partial
+from numbers import Number
+import matplotlib
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
 import qdarktheme
 
 __doc__     = "Calculator and Math Helper"
-__version__ = "0.2.3"
+__version__ = "0.0.3"
 
 PTH_APP = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(PTH_APP, 'data'))
 
 # ---- Local addins
 from _global_ import *
+matplotlib.use('Qt5Agg')
 from generic_widgets import QCalcWidget, QTriangle_Solver
 import mainWindow
     
@@ -20,7 +25,7 @@ class MainWindow(QMainWindow, mainWindow.Ui_MainWindow):
     def __init__(self, app:QApplication) -> None:
         super().__init__(None)
         self.setupUi(self)
-        self.setWindowTitle(f'{__doc__} [{__version__}]')
+        self.setWindowTitle("Fun with Geometry")
         self.show()
         self._app  = app
 
