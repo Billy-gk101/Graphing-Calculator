@@ -338,8 +338,8 @@
                          <rect>
                           <x>0</x>
                           <y>0</y>
-                          <width>248</width>
-                          <height>230</height>
+                          <width>273</width>
+                          <height>254</height>
                          </rect>
                         </property>
                         <layout class="QGridLayout" name="gridLayout_9">
@@ -865,10 +865,10 @@
           <widget class="QWidget" name="scrollAreaWidgetContents">
            <property name="geometry">
             <rect>
-             <x>-423</x>
+             <x>0</x>
              <y>0</y>
-             <width>1009</width>
-             <height>52</height>
+             <width>1058</width>
+             <height>58</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_3">
@@ -1578,7 +1578,7 @@
                <property name="maximumSize">
                 <size>
                  <width>75</width>
-                 <height>20</height>
+                 <height>16777215</height>
                 </size>
                </property>
                <property name="text">

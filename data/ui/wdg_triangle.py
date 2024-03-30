@@ -623,7 +623,7 @@ class Ui_Form(object):
         self.gridLayout_5 = QtWidgets.QGridLayout()
         self.gridLayout_5.setObjectName("gridLayout_5")
         self.lineEdit = QtWidgets.QLineEdit(self.widget)
-        self.lineEdit.setMaximumSize(QtCore.QSize(75, 20))
+        self.lineEdit.setMaximumSize(QtCore.QSize(75, 16777215))
         self.lineEdit.setText("")
         self.lineEdit.setAlignment(QtCore.Qt.AlignCenter)
         self.lineEdit.setObjectName("lineEdit")
