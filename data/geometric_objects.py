@@ -15,6 +15,14 @@ class Line_Segment():
     def __str__(self):
         return f"{self.length}"
     
+    def get_data(self) -> dict:
+        rtn = {}
+        rtn['length']      = self.length
+        rtn['start_point'] = self.start_point
+        rtn['end_point']   = self.end_point
+        rtn['mid_point']   = self.mid_point
+        return rtn
+    
     #region checks
     def intersection(self, geometry:BaseGeometry):
         '''Returns the points that is shared between this and provided geometry.'''
@@ -68,8 +76,10 @@ class Line_Segment():
         so to reverse this from information known we'd use b=y-(m*x)
         '''
         m   = self.slope
-        x,y = self.start_point[1]
-        return y-(m*x)
+        x,y = self.start_point
+        if isinstance(m, Number):
+            return y-(m*x)
+        return f"{y}-({m}*{x})"
 
     @ property
     def slope(self) -> Number:
@@ -82,7 +92,10 @@ class Line_Segment():
         c = self.coords
         if not None in c:
             x,y = c
-            return (y[1]-y[0])/(x[1]-x[0])
+            try:
+                return (y[1]-y[0])/(x[1]-x[0])
+            except Exception as e:
+                return f"{y[1]-y[0]}/{x[1]-x[0]}"
         return None
     
     @property

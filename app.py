@@ -30,6 +30,10 @@ class MainWindow(QMainWindow, mainWindow.Ui_MainWindow):
         self._app  = app
 
         # add custom widgets
+        self.tabWidget:QTabWidget
+        self.tabWidget.setTabText(0,'Calculator')
+        self.tabWidget.setTabText(1,'Triangle solver')
+
         self._calc = QCalcWidget(self.tab)
         self.triangle_solver = QTriangle_Solver(self.tab_2)
         return

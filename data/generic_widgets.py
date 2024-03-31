@@ -507,23 +507,67 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
             QMessageBox.information(None,"System Information Notification",'Export complete')
         return
     
+    def __lineInfoFormater(self, name:str, line:geometric_objects.Line_Segment) -> str:
+        '''collects infomration from a line segment and applys a HTML format for display'''
+
+        # remove space/padd from headings
+        h1 = f'<h1 style="padding:0;margin:0;">'
+
+        # compile the info from the class
+        compiled = f'{h1}{name}</h1>'
+        for key,val in line.get_data().items():
+            compiled += f"<b>{key.title()}</b>: "
+            if isinstance(val, Number):
+                compiled += f"<i>{'{:,g}'.format(round(val,self.__prc))}</i><br>"
+            elif isinstance(val, tuple):
+                compiled += '<i>('
+                for itm in val:
+                    if isinstance(itm, Number):
+                        compiled += f"{'{:,g}'.format(round(itm,self.__prc))}, "
+                    else:
+                        compiled += f"{itm}, "
+                compiled = compiled[:-2]
+                compiled += ')</i><br>'
+            else:
+                compiled += f"<i>{val}</i><br>"
+        return compiled
+
     def _reloadValues(self):
         self.__prc = self.spinBox.value()
         self.__dta = self.__t.get_data()
         v = self.__dta
+
+        #TODO: load this information and all other unshown information into 'textBrowser'
+        txt = '<h1 style="padding:0;margin:0;">General info</h1>'
+        Aϴ = '{:,g}'.format(round(v['angle_a'],self.__prc))
+        Bϴ = '{:,g}'.format(round(v['angle_b'],self.__prc))
+        Cϴ = '{:,g}'.format(round(v['angle_c'],self.__prc))
+        txt += f'<b>Angle A</b>: {Aϴ}<br>'
+        txt += f'<b>Angle B</b>: {Bϴ}<br>'
+        txt += f'<b>Angle C</b>: {Cϴ}<br>'
+        self.label_16.setText(Aϴ)
+        self.label_17.setText(Bϴ)
+        self.label_18.setText(Cϴ)
+        a = '{:,g}'.format(round(v['area'],self.__prc))
+        p = '{:,g}'.format(round(v['perimeter'],self.__prc))
+        txt += f'<b>Area</b>: {a}<br>'
+        txt += f'<b>Perimeter</b>: {p}<br>'
+        self.label_19.setText(a)
+        self.label_22.setText(p)        
         self.label_7.setText('{:,g}'.format(round(v['side_a'].length,self.__prc)))
         self.label_8.setText('{:,g}'.format(round(v['side_b'].length,self.__prc)))
-        self.label_9.setText('{:,g}'.format(round(v['side_c'].length,self.__prc)))
-        self.label_16.setText('{:,g}'.format(round(v['angle_a'],self.__prc)))
-        self.label_17.setText('{:,g}'.format(round(v['angle_b'],self.__prc)))
-        self.label_18.setText('{:,g}'.format(round(v['angle_c'],self.__prc)))
-        self.label_19.setText('{:,g}'.format(round(v['area'],self.__prc)))
-        self.label_22.setText('{:,g}'.format(round(v['perimeter'],self.__prc)))
+        self.label_9.setText('{:,g}'.format(round(v['side_c'].length,self.__prc)))        
+        txt += self.__lineInfoFormater('lBC (side a)',v['side_a'])
+        txt += self.__lineInfoFormater('lAC (side b)',v['side_b'])
+        txt += self.__lineInfoFormater('lAB (side c)',v['side_c'])
 
         # --- load medians lengths        
         self.label_47.setText('{:,g}'.format(round(v['lmA'].length,self.__prc)))
         self.label_48.setText('{:,g}'.format(round(v['lmB'].length,self.__prc)))
         self.label_49.setText('{:,g}'.format(round(v['lmC'].length,self.__prc)))
+        txt += self.__lineInfoFormater('lmA',v['lmA'])
+        txt += self.__lineInfoFormater('lmB',v['lmB'])
+        txt += self.__lineInfoFormater('lmC',v['lmC'])
 
         # --- load coords
         A,B,C = self.__t.triangle_coords
@@ -531,22 +575,13 @@ class QTriangle_Solver(QWidget, wdg_triangle.Ui_Form):
         self.label_30.setText(f"({'{:,g}'.format(round(B[0],self.__prc))},{'{:,g}'.format(round(B[1],self.__prc))})")
         self.label_31.setText(f"({'{:,g}'.format(round(C[0],self.__prc))},{'{:,g}'.format(round(C[1],self.__prc))})")
 
-        A,B,C = self.__t.triangle_midpoint_coords
-        self.label_34.setText(f"({'{:,g}'.format(round(A[0],self.__prc))},{'{:,g}'.format(round(A[1],self.__prc))})")
-        self.label_37.setText(f"({'{:,g}'.format(round(B[0],self.__prc))},{'{:,g}'.format(round(B[1],self.__prc))})")
-        self.label_38.setText(f"({'{:,g}'.format(round(C[0],self.__prc))},{'{:,g}'.format(round(C[1],self.__prc))})")
+        mA,mB,mC = self.__t.triangle_midpoint_coords
+        self.label_34.setText(f"({'{:,g}'.format(round(mA[0],self.__prc))},{'{:,g}'.format(round(mA[1],self.__prc))})")
+        self.label_37.setText(f"({'{:,g}'.format(round(mB[0],self.__prc))},{'{:,g}'.format(round(mB[1],self.__prc))})")
+        self.label_38.setText(f"({'{:,g}'.format(round(mC[0],self.__prc))},{'{:,g}'.format(round(mC[1],self.__prc))})")
 
-        # --- load coords
-        # lbl:QLabel
-        # key:str
-        # # self.label_29:'side_a', self.label_30:'side_b', self.label_31:'side_c',
-        # for lbl, key in {self.label_34:'lmA', self.label_37:'lmB', self.label_38:'lmC'}.items():
-        #     x1,y1 = v[key].start_point
-        #     x2,y2 = v[key].end_point
-        #     a = f"{'{:,g}'.format(round(x1,self.__prc))}, {'{:,g}'.format(round(y1,self.__prc))}"
-        #     b = f"{'{:,g}'.format(round(x2,self.__prc))}, {'{:,g}'.format(round(y2,self.__prc))}"
-        #     lbl.setText(f"({a}) ({b})")
-        
+        # apply compiled text to viewer for user
+        self.textBrowser.setText(txt)        
         
         # finally render the triangle; so we have all the data we might need to label said graph
         return self._renderGraph()
