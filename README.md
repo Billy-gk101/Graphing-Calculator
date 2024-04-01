@@ -1,4 +1,5 @@
-![Logo of the project](https://github.com/Billy-gk101/Graphing-Calculator/blob/main/img_geometry.png)
+>built project on python3.10.12
+>![Logo of the project](https://github.com/Billy-gk101/Graphing-Calculator/blob/main/img_geometry.png)
 # Graphing-Calculator
 > Attempt at creating a expanding calculator for Pre-Algebra thru Calculous
 recreating wheel but for my education/practice
@@ -8,7 +9,6 @@ Graph shown via `Matplotlib` (with the QT hook provided by matplotlib)
 
 color of rendered objects can be configured and exported so next load you keep your prefered colors
 
->built project on python3.10.12
 
 ### Goals
 - Create a function calculator.
