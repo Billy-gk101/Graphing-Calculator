@@ -21,6 +21,8 @@ class Line_Segment():
         rtn['start_point'] = self.start_point
         rtn['end_point']   = self.end_point
         rtn['mid_point']   = self.mid_point
+        rtn['slope']       = self.slope
+        rtn['y_intercept']  = self.y_intercept
         return rtn
     
     #region checks
@@ -50,9 +52,9 @@ class Line_Segment():
     
     @property
     def mid_point(self) -> tuple[Number,Number]:
-        c = self.coords
-        x1, y1 = c[0]
-        x2, y2 = c[1]
+        '''line mid-point coordinate'''
+        x1, y1 = self.start_point
+        x2, y2 = self.end_point
         return ((x1+x2)/2, (y1+y2)/2)
     
     @property
@@ -62,18 +64,22 @@ class Line_Segment():
 
         Returns
         -------
-        list[tuple[Number,Number],tuple[Number,Number]]
-            [(start_x, start_y), (end_x, end_y)]
+        [(start_x, start_y), (end_x, end_y)]
         '''
         return list(self.__lineString.coords)
     
     @property
-    def y_intercept(self) -> Number:
+    def y_intercept(self) -> Number|str:
         '''
         Where the line intercepts (crosses) the Y-axis
 
         this is defined algebraically as y=mx+b where b is the intercept value
         so to reverse this from information known we'd use b=y-(m*x)
+
+        Returns
+        -------
+            Number : value of equation
+            str    : when there is a value error, string format of equation
         '''
         m   = self.slope
         x,y = self.start_point
@@ -82,20 +88,27 @@ class Line_Segment():
         return f"{y}-({m}*{x})"
 
     @ property
-    def slope(self) -> Number:
+    def slope(self) -> Number|str|None:
         '''
         slope of line
 
         this has a few terms; slope, gradient, rise/run, etc
         this is defined algebraically as m=(y₂-y₁)/(x₂-x₁)
+
+        Returns
+        -------
+            Number : value of equation
+            str    : when there is a value error, string format of equation
         '''
         c = self.coords
         if not None in c:
-            x,y = c
+            x1,y1 = self.start_point
+            x2,y2 = self.end_point
+            x,y   = (y2-y1),(x2-x1)
             try:
-                return (y[1]-y[0])/(x[1]-x[0])
+                return y/x
             except Exception as e:
-                return f"{y[1]-y[0]}/{x[1]-x[0]}"
+                return f"{y}/{x}"
         return None
     
     @property
@@ -273,11 +286,8 @@ class Triangle():
         self.__tri:GeometryCollection = None
         return
     
-    def get_data(self):
+    def get_data(self) -> dict[str, object]:
             '''quick way to get form information about the triangle geometry'''
-        #     v['lmA']}")
-        # self.label_48.setText(f"{v['lmB']}")
-        # self.label_49.setText(f"{v['lmC']}")
             return {"side_a":self.side_a, "side_b":self.side_b, "side_c":self.side_c, 
                     "angle_a":self.Aϴ, "angle_b":self.Bϴ, "angle_c":self.Cϴ, 
                     "area":self.area, "perimeter":self.perimeter, "inradius":self.inradius,
@@ -307,10 +317,10 @@ class Triangle():
 
     # region property defs
     @property
-    def perimeter(self):        
+    def perimeter(self) -> Number:        
         return self.__tri.length
     @property
-    def area(self) -> float:
+    def area(self) -> Number:
         '''Unitless area of the triangle geometry'''
         a = self.side_a.length
         b = self.side_b.length
@@ -319,8 +329,14 @@ class Triangle():
         # Area = Square root of √( s(s-a)(s-b)(s-c) ) where s is half the perimeter
         return math.sqrt(s*(s-a)*(s-b)*(s-c))
     @property
-    def bounds(self) -> tuple:
-        '''minimum bounding region of the triangle geometry'''
+    def bounds(self) -> tuple[Number,Number,Number,Number]:
+        '''
+        minimum bounding region of the triangle geometry
+
+        Returns
+        -------
+        (min_x, min_y, max_x, max_y)
+        '''
         return self.__tri.bounds
     @property
     def inradius(self):
@@ -719,3 +735,7 @@ if __name__ == '__main__':
     t = Triangle()
     t.solve_SSS(4,3,5)
     print(t.triangle_coords)
+    d = t.get_data()
+    lAB:Line_Segment = d['side_b']
+    print(lAB.get_data())
+    print(t.bounds)
